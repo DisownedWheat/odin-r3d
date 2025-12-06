@@ -19,11 +19,11 @@
 package r3d
 
 
+import rl "./raylib"
 import c "core:c/libc"
-import rl "vendor:raylib"
 
 when ODIN_OS == .Linux {
-	foreign import lib "./libr3d.so"
+	foreign import lib {"./libr3d.a", "./libraygui.a", "./libraylib.a", "./libassimp.a", "system:m", "system:pthread", "system:dl", "system:rt", "system:z", "system:stdc++"}
 }
 
 /**
@@ -44,16 +44,16 @@ Flag :: enum c.uint {
 	Precision_Buffers = 18, /**< Use 32-bit HDR formats like R11G11B10F for intermediate color buffers instead of full 16-bit floats. Saves memory and bandwidth. */
 }
 
-FLAG_NONE :: 0
-FLAG_FXAA :: (10)
-FLAG_BLIT_LINEAR :: (11)
-FLAG_ASPECT_KEEP :: (12)
-FLAG_STENCIL_TEST :: (13)
-FLAG_8_BIT_NORMALS :: (14)
-FLAG_NO_FRUSTUM_CULLING :: (15)
-FLAG_TRANSPARENT_SORTING :: (16)
-FLAG_OPAQUE_SORTING :: (17)
-FLAG_LOW_PRECISION_BUFFERS :: (18)
+FLAG_NONE: c.uint : 0
+FLAG_FXAA: c.uint : (10)
+FLAG_BLIT_LINEAR: c.uint : (11)
+FLAG_ASPECT_KEEP: c.uint : (12)
+FLAG_STENCIL_TEST: c.uint : (13)
+FLAG_8_BIT_NORMALS: c.uint : (14)
+FLAG_NO_FRUSTUM_CULLING: c.uint : (15)
+FLAG_TRANSPARENT_SORTING: c.uint : (16)
+FLAG_OPAQUE_SORTING: c.uint : (17)
+FLAG_LOW_PRECISION_BUFFERS: c.uint : (18)
 
 /**
 * @brief Bitfield type used to specify rendering layers for 3D objects.
@@ -241,10 +241,10 @@ AnimMode :: enum c.uint {
 */
 Vertex :: struct {
 	position: rl.Vector3, /**< The 3D position of the vertex in object space. */
-	texcoord: c.int, /**< The 2D texture coordinates (UV) for mapping textures. */
-	normal:   c.int, /**< The normal vector used for lighting calculations. */
-	color:    c.int, /**< Vertex color, typically RGBA. */
-	tangent:  c.int, /**< The tangent vector, used in normal mapping (often with a handedness in w). */
+	texcoord: rl.Vector2, /**< The 2D texture coordinates (UV) for mapping textures. */
+	normal:   rl.Vector3, /**< The normal vector used for lighting calculations. */
+	color:    rl.Vector4, /**< Vertex color, typically RGBA. */
+	tangent:  rl.Vector4, /**< The tangent vector, used in normal mapping (often with a handedness in w). */
 	boneIds:  [4]c.int, /**< Indices of up to 4 bones that influence this vertex (for GPU skinning). */
 	weights:  [4]c.float, /**< Corresponding bone weights (should sum to 1.0). Defines the influence of each bone. */
 }
@@ -255,18 +255,18 @@ Vertex :: struct {
 * Contains vertex/index data, GPU buffer handles, and bounding volume.
 */
 Mesh :: struct {
-	vertices:       ^Vertex, /**< Pointer to the array of vertices. */
-	indices:        ^c.uint, /**< Pointer to the array of indices. */
+	vertices:       [^]Vertex, /**< Pointer to the array of vertices. */
+	indices:        [^]c.uint, /**< Pointer to the array of indices. */
 	vertexCount:    c.int, /**< Number of vertices. */
 	indexCount:     c.int, /**< Number of indices. */
 	vbo:            c.uint, /**< Vertex Buffer Object (GPU handle). */
 	ebo:            c.uint, /**< Element Buffer Object (GPU handle). */
 	vao:            c.uint, /**< Vertex Array Object (GPU handle). */
-	boneMatrices:   ^c.int, /**< Cached animation matrices for all passes. */
+	boneMatrices:   [^]rl.Matrix, /**< Cached animation matrices for all passes. */
 	boneCount:      c.int, /**< Number of bones (and matrices) that affect the mesh. */
 	shadowCastMode: ShadowCastMode, /**< Shadow casting mode for the mesh. */
 	depthMode:      DepthMode, /**< Depth testing mode for the mesh. */
-	aabb:           c.int, /**< Axis-Aligned Bounding Box in local space. */
+	aabb:           rl.BoundingBox, /**< Axis-Aligned Bounding Box in local space. */
 	layers:         Layer, /**< Bitfield indicating the rendering layer(s) this object belongs to. 
                                                A value of 0 means the object is always rendered. */
 }
@@ -284,11 +284,11 @@ Material :: struct {
 	blendMode:     BlendMode, /**< Blend mode used for rendering the material. */
 	cullMode:      CullMode, /**< Face culling mode used for the material. */
 	billboardMode: BillboardMode, /**< Billboard mode applied to the object. */
-	uvOffset:      c.int, /**< UV offset applied to the texture coordinates.
+	uvOffset:      rl.Vector2, /**< UV offset applied to the texture coordinates.
                                            *  For models, this can be set manually.
                                            *  For sprites, this value is overridden automatically.
                                            */
-	uvScale:       c.int, /**< UV scale factor applied to the texture coordinates.
+	uvScale:       rl.Vector2, /**< UV scale factor applied to the texture coordinates.
                                            *  For models, this can be set manually.
                                            *  For sprites, this value is overridden automatically.
                                            */
@@ -296,23 +296,23 @@ Material :: struct {
 }
 
 MapAlbedo :: struct {
-	texture: c.int, /**< Albedo (base color) texture. */
-	color:   c.int, /**< Albedo color multiplier. */
+	texture: rl.Texture2D, /**< Albedo (base color) texture. */
+	color:   rl.Color, /**< Albedo color multiplier. */
 }
 
 MapEmission :: struct {
-	texture: c.int, /**< Emission texture. */
-	color:   c.int, /**< Emission color. */
+	texture: rl.Texture2D, /**< Emission texture. */
+	color:   rl.Color, /**< Emission color. */
 	energy:  c.float, /**< Emission energy multiplier. */
 }
 
 MapNormal :: struct {
-	texture: c.int, /**< Normal map texture. */
+	texture: rl.Texture2D, /**< Normal map texture. */
 	scale:   c.float, /**< Normal scale. */
 }
 
 MapORM :: struct {
-	texture:   c.int, /**< Combined Occlusion-Roughness-Metalness texture. */
+	texture:   rl.Texture2D, /**< Combined Occlusion-Roughness-Metalness texture. */
 	occlusion: c.float, /**< Occlusion multiplier. */
 	roughness: c.float, /**< Roughness multiplier. */
 	metalness: c.float, /**< Metalness multiplier. */
@@ -327,10 +327,10 @@ MapORM :: struct {
 ModelAnimation :: struct {
 	boneCount:        c.int, /**< Number of bones in the skeleton affected by this animation. */
 	frameCount:       c.int, /**< Total number of frames in the animation sequence. */
-	bones:            ^c.int, /**< Array of bone metadata (name, parent index, etc.) defining the skeleton hierarchy. */
-	frameGlobalPoses: ^^c.int, /**< 2D array [frame][bone]. Global bone matrices (relative to model space). */
-	frameLocalPoses:  ^^c.int, /**< 2D array [frame][bone]. Local bone transforms (TRS relative to parent). */
-	name:             [32]i8, /**< Name identifier for the animation (e.g., "Walk", "Jump"). */
+	bones:            [^]rl.BoneInfo, /**< Array of bone metadata (name, parent index, etc.) defining the skeleton hierarchy. */
+	frameGlobalPoses: [^][^]rl.Matrix, /**< 2D array [frame][bone]. Global bone matrices (relative to model space). */
+	frameLocalPoses:  [^][^]rl.Transform, /**< 2D array [frame][bone]. Local bone transforms (TRS relative to parent). */
+	name:             [32]c.char, /**< Name identifier for the animation (e.g., "Walk", "Jump"). */
 }
 
 /**
@@ -339,17 +339,17 @@ ModelAnimation :: struct {
 * Contains multiple meshes and their associated materials, along with bounding information.
 */
 Model :: struct {
-	meshes:        ^Mesh, /**< Array of meshes composing the model. */
-	materials:     ^Material, /**< Array of materials used by the model. */
+	meshes:        [^]Mesh, /**< Array of meshes composing the model. */
+	materials:     [^]Material, /**< Array of materials used by the model. */
 	meshMaterials: ^c.int, /**< Array of material indices, one per mesh. */
 	meshCount:     c.int, /**< Number of meshes. */
 	materialCount: c.int, /**< Number of materials. */
-	aabb:          c.int, /**< Axis-Aligned Bounding Box encompassing the whole model. */
-	boneOffsets:   ^c.int, /**< Array of offset (inverse bind) matrices, one per bone.
+	aabb:          rl.BoundingBox, /**< Axis-Aligned Bounding Box encompassing the whole model. */
+	boneOffsets:   [^]rl.Matrix, /**< Array of offset (inverse bind) matrices, one per bone.
                                          Transforms mesh-space vertices to bone space. Used in skinning. */
 	animationMode: AnimMode,
-	boneOverride:  ^c.int, /**< Array of Matrices we'll use if we have it instead of internal calculations, Used in skinning. */
-	bones:         ^c.int, /**< Bones information (skeleton). Defines the hierarchy and names of bones. */
+	boneOverride:  [^]rl.Matrix, /**< Array of Matrices we'll use if we have it instead of internal calculations, Used in skinning. */
+	bones:         [^]rl.BoneInfo, /**< Bones information (skeleton). Defines the hierarchy and names of bones. */
 	boneCount:     c.int, /**< Number of bones. */
 	anim:          ^ModelAnimation, /**< Pointer to the currently assigned animation for this model (optional). */
 	animFrame:     c.int, /**< Current animation frame index. Used for sampling bone poses from the animation. */
@@ -369,9 +369,9 @@ Light :: c.uint
 * precomputed lighting textures used for image-based lighting (IBL).
 */
 Skybox :: struct {
-	cubemap:    c.int, ///< The skybox cubemap texture for the background and reflections.
-	irradiance: c.int, ///< The irradiance cubemap for diffuse ambient lighting.
-	prefilter:  c.int, ///< The prefiltered cubemap for specular reflections with mipmaps.
+	cubemap:    rl.TextureCubemap, ///< The skybox cubemap texture for the background and reflections.
+	irradiance: rl.Texture2D, ///< The irradiance cubemap for diffuse ambient lighting.
+	prefilter:  rl.Texture2D, ///< The prefiltered cubemap for specular reflections with mipmaps.
 }
 
 /**
@@ -387,7 +387,7 @@ Sprite :: struct {
 	material:       Material, ///< The material used for rendering the sprite, including its texture and shading properties.
 	shadowCastMode: ShadowCastMode, ///< The shadow casting mode for the sprite.
 	currentFrame:   c.float, ///< The current animation frame, represented as a floating-point value to allow smooth interpolation.
-	frameSize:      c.int, ///< The size of a single animation frame, in texture coordinates (width and height).
+	frameSize:      rl.Vector2, ///< The size of a single animation frame, in texture coordinates (width and height).
 	xFrameCount:    c.int, ///< The number of frames along the horizontal (X) axis of the texture.
 	yFrameCount:    c.int, ///< The number of frames along the vertical (Y) axis of the texture.
 	layers:         Layer, /**< Bitfield indicating the rendering layer(s) this object belongs to. 
@@ -413,7 +413,7 @@ Keyframe :: struct {
 * over a normalized time range (0.0 to 1.0).
 */
 InterpolationCurve :: struct {
-	keyframes: ^Keyframe, ///< Dynamic array of keyframes defining the interpolation curve.
+	keyframes: [^]Keyframe, ///< Dynamic array of keyframes defining the interpolation curve.
 	capacity:  c.uint, ///< Allocated size of the keyframes array.
 	count:     c.uint, ///< Current number of keyframes in the array.
 }
@@ -425,17 +425,17 @@ InterpolationCurve :: struct {
 */
 Particle :: struct {
 	lifetime:            c.float, ///< Duration of the particle's existence in seconds.
-	transform:           c.int, ///< The particle's current transformation matrix in 3D space.
-	position:            c.int, ///< The current position of the particle in 3D space.
-	rotation:            c.int, ///< The current rotation of the particle in 3D space (Euler angles).
-	scale:               c.int, ///< The current scale of the particle in 3D space.
-	color:               c.int, ///< The current color of the particle, representing its color modulation.
-	velocity:            c.int, ///< The current velocity of the particle in 3D space.
-	angularVelocity:     c.int, ///< The current angular velocity of the particle in radians (Euler angles).
-	baseScale:           c.int, ///< The initial scale of the particle in 3D space.
-	baseVelocity:        c.int, ///< The initial velocity of the particle in 3D space.
-	baseAngularVelocity: c.int, ///< The initial angular velocity of the particle in radians (Euler angles).
-	baseOpacity:         u8, ///< The initial opacity of the particle, ranging from 0 (fully transparent) to 255 (fully opaque).
+	transform:           rl.Matrix, ///< The particle's current transformation matrix in 3D space.
+	position:            rl.Vector3, ///< The current position of the particle in 3D space.
+	rotation:            rl.Vector3, ///< The current rotation of the particle in 3D space (Euler angles).
+	scale:               rl.Vector3, ///< The current scale of the particle in 3D space.
+	color:               rl.Color, ///< The current color of the particle, representing its color modulation.
+	velocity:            rl.Vector3, ///< The current velocity of the particle in 3D space.
+	angularVelocity:     rl.Vector3, ///< The current angular velocity of the particle in radians (Euler angles).
+	baseScale:           rl.Vector3, ///< The initial scale of the particle in 3D space.
+	baseVelocity:        rl.Vector3, ///< The initial velocity of the particle in 3D space.
+	baseAngularVelocity: rl.Vector3, ///< The initial angular velocity of the particle in radians (Euler angles).
+	baseOpacity:         c.uchar, ///< The initial opacity of the particle, ranging from 0 (fully transparent) to 255 (fully opaque).
 }
 
 /**
@@ -445,21 +445,21 @@ Particle :: struct {
 * curves for controlling properties over time, and settings for shadow casting, emission rate, and more.
 */
 ParticleSystem :: struct {
-	particles:                   ^Particle, ///< Pointer to the array of particles in the system.
+	particles:                   [^]Particle, ///< Pointer to the array of particles in the system.
 	capacity:                    c.int, ///< The maximum number of particles the system can manage.
 	count:                       c.int, ///< The current number of active particles in the system.
-	position:                    c.int, ///< The initial position of the particle system. Default: (0, 0, 0).
-	gravity:                     c.int, ///< The gravity applied to the particles. Default: (0, -9.81, 0).
-	initialScale:                c.int, ///< The initial scale of the particles. Default: (1, 1, 1).
+	position:                    rl.Vector3, ///< The initial position of the particle system. Default: (0, 0, 0).
+	gravity:                     rl.Vector3, ///< The gravity applied to the particles. Default: (0, -9.81, 0).
+	initialScale:                rl.Vector3, ///< The initial scale of the particles. Default: (1, 1, 1).
 	scaleVariance:               c.float, ///< The variance in particle scale. Default: 0.0f.
-	initialRotation:             c.int, ///< The initial rotation of the particles in Euler angles (degrees). Default: (0, 0, 0).
-	rotationVariance:            c.int, ///< The variance in particle rotation in Euler angles (degrees). Default: (0, 0, 0).
-	initialColor:                c.int, ///< The initial color of the particles. Default: WHITE.
-	colorVariance:               c.int, ///< The variance in particle color. Default: BLANK.
-	initialVelocity:             c.int, ///< The initial velocity of the particles. Default: (0, 0, 0).
-	velocityVariance:            c.int, ///< The variance in particle velocity. Default: (0, 0, 0).
-	initialAngularVelocity:      c.int, ///< The initial angular velocity of the particles in Euler angles (degrees). Default: (0, 0, 0).
-	angularVelocityVariance:     c.int, ///< The variance in angular velocity. Default: (0, 0, 0).
+	initialRotation:             rl.Vector3, ///< The initial rotation of the particles in Euler angles (degrees). Default: (0, 0, 0).
+	rotationVariance:            rl.Vector3, ///< The variance in particle rotation in Euler angles (degrees). Default: (0, 0, 0).
+	initialColor:                rl.Color, ///< The initial color of the particles. Default: WHITE.
+	colorVariance:               rl.Color, ///< The variance in particle color. Default: BLANK.
+	initialVelocity:             rl.Vector3, ///< The initial velocity of the particles. Default: (0, 0, 0).
+	velocityVariance:            rl.Vector3, ///< The variance in particle velocity. Default: (0, 0, 0).
+	initialAngularVelocity:      rl.Vector3, ///< The initial angular velocity of the particles in Euler angles (degrees). Default: (0, 0, 0).
+	angularVelocityVariance:     rl.Vector3, ///< The variance in angular velocity. Default: (0, 0, 0).
 	lifetime:                    c.float, ///< The lifetime of the particles in seconds. Default: 1.0f.
 	lifetimeVariance:            c.float, ///< The variance in lifetime in seconds. Default: 0.0f.
 	emissionTimer:               c.float, ///< Use to control automatic emission, should not be modified manually.
@@ -469,8 +469,8 @@ ParticleSystem :: struct {
 	speedOverLifetime:           ^InterpolationCurve, ///< Curve controlling the speed evolution of the particles over their lifetime. Default: NULL.
 	opacityOverLifetime:         ^InterpolationCurve, ///< Curve controlling the opacity evolution of the particles over their lifetime. Default: NULL.
 	angularVelocityOverLifetime: ^InterpolationCurve, ///< Curve controlling the angular velocity evolution of the particles over their lifetime. Default: NULL.
-	aabb:                        c.int, ///< For frustum culling. Defaults to a large AABB; compute manually via `CalculateParticleSystemBoundingBox` after setup.
-	autoEmission:                c.int, /**< Indicates whether particle emission is automatic when calling `UpdateParticleSystem`.
+	aabb:                        rl.BoundingBox, ///< For frustum culling. Defaults to a large AABB; compute manually via `CalculateParticleSystemBoundingBox` after setup.
+	autoEmission:                c.bool, /**< Indicates whether particle emission is automatic when calling `UpdateParticleSystem`.
                                          *   If false, emission is manual using `EmitParticle`. Default: true.
                                          */
 }
