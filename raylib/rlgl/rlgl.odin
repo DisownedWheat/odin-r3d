@@ -155,7 +155,7 @@ RAYLIB_WASM_LIB :: #config(RAYLIB_WASM_LIB, "../wasm/libraylib.a")
 // }
 
 when ODIN_OS == .Linux {
-	foreign import lib "../../libraylib.a"
+	foreign import lib "../../linux/libraylib.a"
 }
 
 GRAPHICS_API_OPENGL_11 :: false

@@ -23,7 +23,7 @@ import rl "./raylib"
 import c "core:c/libc"
 
 when ODIN_OS == .Linux {
-	foreign import lib {"./libr3d.a", "./libraygui.a", "./libraylib.a", "./libassimp.a", "system:m", "system:pthread", "system:dl", "system:rt", "system:z", "system:stdc++"}
+	foreign import lib {"./linux/libr3d.a", "./linux/libraygui.a", "./linux/libraylib.a", "./linux/libassimp.a", "system:m", "system:pthread", "system:dl", "system:rt", "system:z", "system:stdc++"}
 }
 
 /**

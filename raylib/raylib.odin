@@ -95,7 +95,7 @@ import "core:math/linalg"
 _ :: linalg
 
 when ODIN_OS == .Linux {
-	foreign import lib "../libraylib.a"
+	foreign import lib "../linux/libraylib.a"
 }
 
 MAX_TEXTFORMAT_BUFFERS :: #config(RAYLIB_MAX_TEXTFORMAT_BUFFERS, 4)

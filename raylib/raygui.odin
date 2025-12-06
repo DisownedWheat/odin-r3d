@@ -1,7 +1,7 @@
 package raylib
 
 import "core:c"
-foreign import lib "../libraygui.a"
+foreign import lib "../linux/libraygui.a"
 
 // RAYGUI_SHARED :: #config(RAYGUI_SHARED, false)
 // RAYGUI_WASM_LIB :: #config(RAYGUI_WASM_LIB, "wasm/libraygui.a")
