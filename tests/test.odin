@@ -48,6 +48,16 @@ initial_test :: proc(t: ^testing.T) {
 		r3d.End()
 
 		rl.DrawFPS(10, 10)
+
+		buttonValue := rl.GuiMessageBox(
+			{50, 50, 200, 100},
+			"Hello",
+			"This is a message",
+			"OK;Cancel",
+		)
+		if buttonValue > 0 {
+			log.info(buttonValue)
+		}
 		rl.EndDrawing()
 	}
 
